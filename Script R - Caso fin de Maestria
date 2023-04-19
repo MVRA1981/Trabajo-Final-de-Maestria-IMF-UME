@@ -1,0 +1,538 @@
+###### MÓDULO DE ESTADÍSTICA PARA EL CIENTIFICO DE DATOS ######
+
+                    ##### CASO NBA #######
+
+###### MARCO VINICIO RODRÍGUEZ ANDRADE #############
+
+
+
+####LIBRERIAS ####
+library(readr)
+library(readxl)
+library(dplyr)
+library(psych)
+library(polycor)
+library(ggcorrplot)
+library(ggplot2) 
+library(gmodels)
+library(Hmisc)
+library(ggthemes)
+library(GGally)
+library(corrplot)
+library(PerformanceAnalytics)
+library(nFactors)
+library(lavaan)
+library(tidyr)
+library(summarytools)
+library(tidyverse)
+library(haven)
+library(mlbench) 
+library(Amelia) 
+library(plotly) 
+library(reshape2) 
+library(lattice)
+library(caTools) 
+library(ipred)
+library(tibble)
+library(caret)
+library(agricolae)
+library(car)
+library(heatmaply)
+
+NBA_FINAL <- read_excel("C:/Users/59398/Desktop/MASTER/FIN MASTER/Documentos Finales/NBA_FINAL.xlsx")
+View(NBA_FINAL)
+summary(NBA_FINAL)
+
+sapply(NBA_FINAL, function(x) sum(is.na(x)))
+sapply(NBA_FINAL, class)
+
+
+#### SUMA DE NA POR VARIABLE O COLUMNA####
+colSums(is.na(NBA_FINAL))
+
+####RENOMBRAMOS VARIABLES####
+NBA_FINAL<- rename (NBA_FINAL, Gol3P ="3PM")
+NBA_FINAL<- rename (NBA_FINAL, Porc_golcampo ="FG%")
+NBA_FINAL<- rename (NBA_FINAL, Intgol3puntos ="3PA")
+NBA_FINAL<- rename (NBA_FINAL, Por_Gol3p ="3P%")
+NBA_FINAL<- rename (NBA_FINAL, Por_TL ="FT%")
+NBA_FINAL<- rename (NBA_FINAL, AV ="+")
+
+freq(NBA_FINAL$Por_Gol3p)
+summary(NBA_FINAL)
+
+
+#############################################################################
+##### METODO DE IMPUTACION SEGUN LA DISTRIBUCION DE LAS VARIABLES####
+
+NBA_FINAL$Victoria[is.na(NBA_FINAL$Victoria)]<-runif(sum(is.na(NBA_FINAL$Victoria)),min = 1,max=55)
+NBA_FINAL$Gol3P[is.na(NBA_FINAL$Gol3P)]<-runif(sum(is.na(NBA_FINAL$Gol3P)),min = 0.100,max=4.900)
+NBA_FINAL$Intgol3puntos[is.na(NBA_FINAL$Intgol3puntos)]<-runif(sum(is.na(NBA_FINAL$Intgol3puntos)),min = 0.100,max=11.400)
+NBA_FINAL$Por_Gol3p[is.na(NBA_FINAL$Por_Gol3p)]<-runif(sum(is.na(NBA_FINAL$Por_Gol3p)),min =1,max=54.5)
+NBA_FINAL$DD2[is.na(NBA_FINAL$DD2)]<-runif(sum(is.na(NBA_FINAL$DD2)),min =1,max=47)
+NBA_FINAL$AV[is.na(NBA_FINAL$AV)]<-runif(sum(is.na(NBA_FINAL$AV)),min =-5.80,max=6.80)
+
+##############################################################################
+##### CONTEO DE VALORES PERDIDOS ##########################
+
+colSums(is.na(NBA_FINAL))
+
+
+names(NBA_FINAL)
+
+
+######### CORRELACIONES BASE COMPLETA VARIABLES NUM?RICAS ########
+
+NBA_corr=NBA_FINAL[c(4:28)]
+
+cor(NBA_corr)
+
+NBA_corr_1 <- round(cor(NBA_corr), digits=1)
+NBA_corr_1
+
+corrplot(NBA_corr_1)
+corrplot.mixed(NBA_corr_1)
+
+
+
+####RANGO DE TEMPORADAS ####
+
+summary(NBA_FINAL)
+
+NBA_FINAL$R19_20 <- factor(recode(NBA_FINAL$P19_2, "11312:20000=1; 20001:30000=2; 30001:42317=3"))
+                                 
+
+NBA_FINAL$R20_21 <- factor(recode(NBA_FINAL$P2_21, "11000:20000=1; 20001:30000=2; 30001:44000=3"))
+                                 
+
+NBA_FINAL$R21_22 <- factor(recode(NBA_FINAL$P21_22, "11000:20000=1; 20001:30000=2; 30001:46000=3"))
+                                 
+
+NBA_FINAL$R22_23 <- factor(recode(NBA_FINAL$P22_23, "11000:20000=1; 20001:30000=2; 30001:49000=3"))
+                        
+                                 
+                           #labels = c("De 10k a 20k", "De 20k a 30k", "De 30k a 49k"))
+
+names(NBA_FINAL)
+setwd('C:/Users/59398/Desktop/MASTER/FIN MASTER/Documentos Finales')
+
+write.csv2(NBA_FINAL, "43_rangos.csv")
+
+###############################################################################################
+
+ggplot() +
+  geom_bar(data = NBA_FINAL, aes(x = PLAYER, y = P19_2, fill = "2019-2020"), stat = "identity") +
+  geom_bar(data = NBA_FINAL, aes(x = PLAYER, y = P2_21, fill = "2020-2021"), stat = "identity") +
+  geom_bar(data = NBA_FINAL, aes(x = PLAYER, y = P21_22, fill = "2021-2022"), stat = "identity") +
+  geom_bar(data = NBA_FINAL, aes(x = PLAYER, y = P22_23, fill = "2022-2023"), stat = "identity")+ 
+  geom_bar(position="fill", stat="identity") +
+  guides(x = guide_axis(angle = 90))
+
+
+  ###############################################################################################
+
+
+####GRAFICO CONCENTRACIÓN DE PUNTOS CON MINUTOS JUGADOS Y RANGO SUELDO 2019-2020 ####
+par(mfrow=c(1, 2))
+with(NBA_FINAL, symbols(x=MIN, y=R19_20,
+                     circles=PTS, 
+                     las=2, inches=0.7, 
+                     fg='red',
+                     main='Periodo 2019-2020'))
+
+
+####GRAFICO CONCENTRACIÓN DE PUNTOS CON MINUTOS JUGADOS Y RANGO SUELDO 2020-2021 ####
+par(mfrow=c(1, 2))
+with(NBA_FINAL, symbols(x=MIN, y=R20_21,
+                        circles=PTS, 
+                        las=2, inches=0.7, 
+                        fg='blue',
+                        main='Periodo 2020-2021'))
+
+
+####GRAFICO CONCENTRACIÓN DE PUNTOS CON MINUTOS JUGADOS Y RANGO SUELDO 2021-2022 ####
+par(mfrow=c(1, 2))
+with(NBA_FINAL, symbols(x=MIN, y=R21_22,
+                        circles=PTS, 
+                        las=2, inches=0.7, 
+                        fg='black',
+                        main='Periodo 2021-2022'))
+
+####GRAFICO CONCENTRACIÓN DE PUNTOS CON MINUTOS JUGADOS Y RANGO SUELDO 2021-2022 ####
+par(mfrow=c(1, 2))
+with(NBA_FINAL, symbols(x=MIN, y=R22_23,
+                        circles=PTS, 
+                        las=2, inches=0.7, 
+                        fg='#4477AA',
+                        main='Periodo 2022-2023'))
+
+ 
+
+
+
+
+
+#####################################################################################
+####################################################################################
+
+                     #### ANALISIS BASE COMPLETA ####
+
+##################################################################################
+
+BASE_completa <- read_excel("C:/Users/59398/Desktop/MASTER/FIN MASTER/Documentos Finales/BASE_NBA.xlsx")
+names(BASE_completa)
+
+SALARIOs <- read_delim("C:/Users/59398/Desktop/MASTER/FIN MASTER/Documentos Finales/SALARIO20_23.csv", 
+                           delim = ";", escape_double = FALSE, trim_ws = TRUE, na="0")
+
+BASE_NBA_1 <- left_join(BASE_completa, SALARIOs, by=c("PLAYER"))
+names(BASE_NBA_1)
+
+                #########################################
+
+                 #####      BASE VALIDA    ###############
+
+                ###########################################
+
+BASE_NBA <- select(BASE_NBA_1, -RK,-TEAM.y)
+
+summary(BASE_NBA)
+####RENOMBRAMOS VARIABLES####
+BASE_NBA<- rename (BASE_NBA, Gol3P ="3PM")
+BASE_NBA<- rename (BASE_NBA, Porc_golcampo ="FG%")
+BASE_NBA<- rename (BASE_NBA, Intgol3puntos ="3PA")
+BASE_NBA<- rename (BASE_NBA, Por_Gol3p ="3P%")
+BASE_NBA<- rename (BASE_NBA, Por_TL ="FT%")
+BASE_NBA<- rename (BASE_NBA, AV ="+")
+
+
+summary(BASE_NBA)
+sapply(BASE_NBA, class)
+
+#METODO DE IMPUTACION SEGUN LA DISTRIBUCION DE LAS VARIABLES##
+
+BASE_NBA$Victoria[is.na(BASE_NBA$Victoria)]<-runif(sum(is.na(BASE_NBA$Victoria)),min = 1,max=55)
+BASE_NBA$Gol3P[is.na(BASE_NBA$Gol3P)]<-runif(sum(is.na(BASE_NBA$Gol3P)),min = 0.100,max=4.900)
+BASE_NBA$Intgol3puntos[is.na(BASE_NBA$Intgol3puntos)]<-runif(sum(is.na(BASE_NBA$Intgol3puntos)),min = 0.100,max=11.400)
+BASE_NBA$Por_Gol3p[is.na(BASE_NBA$Por_Gol3p)]<-runif(sum(is.na(BASE_NBA$Por_Gol3p)),min =1,max=54.5)
+BASE_NBA$DD2[is.na(BASE_NBA$DD2)]<-runif(sum(is.na(BASE_NBA$DD2)),min =1,max=64)
+BASE_NBA$AV[is.na(BASE_NBA$AV)]<-runif(sum(is.na(BASE_NBA$AV)),min =-17.0000,max=10)
+BASE_NBA$FTM[is.na(BASE_NBA$FTM)]<-runif(sum(is.na(BASE_NBA$FTM)),min =0.100,max=10)
+BASE_NBA$FTA[is.na(BASE_NBA$FTA)]<-runif(sum(is.na(BASE_NBA$FTA)),min =0.100,max=13)
+BASE_NBA$Por_TL[is.na(BASE_NBA$Por_TL)]<-runif(sum(is.na(BASE_NBA$Por_TL)),min =0.100,max=13)
+BASE_NBA$OREB[is.na(BASE_NBA$OREB)]<-runif(sum(is.na(BASE_NBA$OREB)),min =0.100,max=6)
+BASE_NBA$AST[is.na(BASE_NBA$AST)]<-runif(sum(is.na(BASE_NBA$AST)),min =0.100,max=9.900)
+BASE_NBA$TOV[is.na(BASE_NBA$TOV)]<-runif(sum(is.na(BASE_NBA$TOV)),min =0.100,max=4.100)
+BASE_NBA$STL[is.na(BASE_NBA$STL)]<-runif(sum(is.na(BASE_NBA$STL)),min =0.100,max=3.1000)
+BASE_NBA$BLK[is.na(BASE_NBA$BLK)]<-runif(sum(is.na(BASE_NBA$BLK)),min =0.100,max=3.100)
+
+
+colSums(is.na(BASE_NBA))
+
+# ##########################################################################################
+#                   ####### IMPUTACIÓN DE SUELDOS #############
+# ########################################################################################
+# 
+
+    rand.imput <-function(x){
+    missing <- (is.na(x)) #vector booleano
+    n.missing <- sum(missing)#Numero de NA's
+    x.obs <- x[!missing]#Datos no NA
+    imputed <- x
+    imputed[missing] <- sample(x.obs,n.missing,replace = T)
+    #Se extrae una muestra aleatoria conocida y se remplazan estos en los NA
+    return(imputed)}
+
+ S1920 <- rand.imput(BASE_NBA$Sueldo1920)
+
+  plot(density(S1920), col=2)
+
+
+###############################################################################
+
+
+  rand.imput <-function(x){
+    missing <- (is.na(x)) #vector booleano
+    n.missing <- sum(missing)#Numero de NA's
+    x.obs <- x[!missing]#Datos no NA
+    imputed <- x
+    imputed[missing] <- sample(x.obs,n.missing,replace = T)
+    #Se extrae una muestra aleatoria conocida y se remplazan estos en los NA
+    return(imputed)}
+
+  S2021 <- rand.imput(BASE_NBA$Sueldo2021)
+
+  plot(density(S2021), col=2)
+
+
+  #########################################################################
+
+
+  rand.imput <-function(x){
+    missing <- (is.na(x)) #vector booleano
+    n.missing <- sum(missing)#Numero de NA's
+    x.obs <- x[!missing]#Datos no NA
+    imputed <- x
+    imputed[missing] <- sample(x.obs,n.missing,replace = T)
+    #Se extrae una muestra aleatoria conocida y se remplazan estos en los NA
+    return(imputed)}
+
+  S2122 <- rand.imput(BASE_NBA$Sueldo2122)
+
+  plot(density(S2122), col=2)
+
+  ################################################################
+
+  rand.imput <-function(x){
+    missing <- (is.na(x)) #vector booleano
+    n.missing <- sum(missing)#Numero de NA's
+    x.obs <- x[!missing]#Datos no NA
+    imputed <- x
+    imputed[missing] <- sample(x.obs,n.missing,replace = T)
+    #Se extrae una muestra aleatoria conocida y se remplazan estos en los NA
+    return(imputed)}
+
+  S2223 <- rand.imput(BASE_NBA$Sueldo2223)
+
+  plot(density(S2223), col=2)
+
+  #####################################################################################3
+
+  #####  AGREGAR VARIABLES CALCULADAS #################
+
+
+  BASE_NBA <- cbind(BASE_NBA, S1920,S2021,S2122,S2223)
+  names(BASE_NBA)
+
+
+
+describe(BASE_NBA)
+
+
+########################################################################
+
+#### BASE FINAL SIN SUELDOS DADA SU POCO APORTE AL MODELO ####
+#########################################################################
+
+
+FINAL <- select(BASE_NBA,-PLAYER, -AGE,-AV,-Por_Gol3p, -Por_TL,-GP, -Victoria, -Perdidas, -Porc_golcampo, -DD2, -BLK, -STL, 
+                -Sueldo1920,-Sueldo2021,-Sueldo2122,-Sueldo2223,-Gol3P,-TEAM.x)
+summary(FINAL)
+sapply(FINAL,class)
+dim(FINAL)
+
+
+
+# #####################################################################
+# ##################  RANGOS DE SUELDOS ###################
+# 
+# FINAL$R19_20 <- recode(BASE_NBA$S1920, "11000:20000=1; 20001:30000=2; 30001:41000=3")
+# FINAL$R20_21 <- recode(BASE_NBA$S2021, "12000:20000=1; 20001:30000=2; 30001:45000=3")
+# FINAL$R21_22 <- recode(BASE_NBA$S2122, "12000:20000=1; 20001:30000=2; 30001:46000=3")
+# FINAL$R22_23 <- recode(BASE_NBA$S2223, "12000:20000=1; 20001:30000=2; 30001:49000=3")
+# 
+# names(FINAL)
+# summary(FINAL)
+
+
+########################################################
+####### correlacion variables  base final #########
+
+
+cor(FINAL)
+FINAL_1 <- round(cor(FINAL), digits=1)
+FINAL_1
+
+corrplot(FINAL_1)
+corrplot.mixed(FINAL_1)
+
+
+
+
+
+#########################################################################################3
+################## ############################
+
+
+######### CREACIÓN DE VARIABLE (JUGADOR) ########
+
+names(FINAL)
+describe(FINAL)
+sapply(FINAL, class)
+summary(FINAL)
+
+####JUGADOR CONSIDERANDO LA MEDIA DE LAS 14 VARIABLES####
+
+FINAL$Jugador <- ifelse(FINAL$FGM>=4 & FINAL$MIN>=20.87 & FINAL$PTS>=10 & FINAL$FGA>=8 & 
+                          FINAL$Intgol3puntos>=2.7 & FINAL$FTM>=1.0 & FINAL$FTA>=1.3 &
+                          FINAL$OREB>=0.7 & FINAL$DREB>=2.40 & FINAL$REB>=3.10 &
+                          FINAL$AST>=1.4 & FINAL$TOV>=0.90 & FINAL$PF>=1.70 & FINAL$FP>=14.80,1,0)
+
+freq(FINAL$Jugador)
+hist(FINAL$Jugador)
+
+##TEST T PARA APROBAR HIPOTESIS TOMANDO EN CUENTA LA MEDIA DE LA VARIABLE####
+
+t.test(FINAL$MIN, mu=20.8 )
+
+qplot(FINAL$MIN )
+
+#### DISTRIBUCIÓN POR QUINTILES ####
+
+quantile(FINAL$MIN, seq(0, 1, 0.10))
+quantile(FINAL$FGM, seq(0, 1, 0.10))
+quantile(FINAL$PTS, seq(0, 1, 0.10))
+quantile(FINAL$FGA, seq(0, 1, 0.10))
+quantile(FINAL$Intgol3puntos, seq(0, 1, 0.10))
+quantile(FINAL$FTA, seq(0, 1, 0.10))
+quantile(FINAL$OREB, seq(0, 1, 0.10))
+quantile(FINAL$DREB, seq(0, 1, 0.10))
+quantile(FINAL$REB, seq(0, 1, 0.10))
+quantile(FINAL$AST, seq(0, 1, 0.10))
+quantile(FINAL$TOV, seq(0, 1, 0.10))
+quantile(FINAL$PF, seq(0, 1, 0.10))
+quantile(FINAL$FP, seq(0, 1, 0.10))
+quantile(FINAL$FTM,seq(0, 1, 0.10))
+
+########################################
+##### CRITERIO CON LA MEDIANA ######
+FINAL$Jugador1 <- ifelse(FINAL$FGM>=3.400 & FINAL$MIN>=21.05 & FINAL$PTS>=8 & FINAL$FGA>=6.500 & 
+                          FINAL$Intgol3puntos>=3.200 & FINAL$FTM>=1.300 & FINAL$FTA>=1.750 &
+                          FINAL$OREB>=0.800 & FINAL$DREB>=2.700 & FINAL$REB>=3.600 &
+                          FINAL$AST>=1.700 & FINAL$TOV>=1.100 & FINAL$PF>=1.900 & FINAL$FP>=17.20,1,0)
+
+summary(FINAL$Jugador1)
+freq(FINAL$Jugador1)
+
+
+
+#### VARIABLE JUGADOR CON DECIL4 ####
+
+FINAL$Jugador3 <- ifelse(FINAL$FGM>=2.8 & FINAL$MIN>=18.10 & FINAL$PTS>=6.60 & FINAL$FGA>=5.5 & 
+                           FINAL$Intgol3puntos>=2.70  & FINAL$FTM>=1 & FINAL$FTA>=1.30 &
+                           FINAL$OREB>=0.7 & FINAL$DREB>=2.40 & FINAL$REB>=3.10 &
+                           FINAL$AST>=1.4 & FINAL$TOV>=0.90 & FINAL$PF>=1.70 & FINAL$FP>=14.80,1,0)
+freq(FINAL$Jugador3)
+
+
+summary(FINAL)
+
+mode(FINAL$FGM)
+
+#### Analisis visual de las variables ####
+plot(density(FINAL$PTS), col=2)
+
+hist(FINAL$MIN,freq=FALSE, col="lightcyan",main="Distribución Minutos jugados")
+
+lines(density(FINAL$MIN),col="red",lwd=2.5)
+
+hist(FINAL$PTS,freq=FALSE, col="blue",main="Distribución Puntos jugados")
+lines(density(FINAL$PTS),col="red",lwd=2.5)
+
+hist(FINAL$FGM,freq=FALSE, col="lightcyan",main="Distribución Goles de campo Hechos")
+lines(density(FINAL$FGM),col="red",lwd=2.5)
+
+hist(FINAL$FGA,freq=FALSE, col="blue",main="Distribución Goles de campo Intentados")
+lines(density(FINAL$FGA),col="red",lwd=2.5)
+
+hist(FINAL$Intgol3puntos,freq=FALSE, col="blue",main="Distribución Intento gol 3 Puntos")
+lines(density(FINAL$Intgol3puntos),col="red",lwd=2.5)
+
+hist(FINAL$FTM,freq=FALSE, col="blue",main="Distribución Tiros Libres")
+lines(density(FINAL$FTM),col="red",lwd=2.5)
+
+hist(FINAL$FTA,freq=FALSE, col="blue",main="Distribución Intento Tiros Libres")
+lines(density(FINAL$FTA),col="red",lwd=2)
+
+###########################################################
+###### HISTOGRAMAS DE LAS 14 VARIABLES DE ESTUDIO ####
+
+multi.hist(x = FINAL, dcol = c("blue", "red"), dlty = c("dotted", "solid"),
+           main = "")
+
+#### PRIMER MODELO ####
+
+names(FINAL)
+
+modelo1 <- lm(Jugador1 ~ MIN + PTS + FGM + FGA + Intgol3puntos + 
+                FTM + FTA + OREB + DREB + REB + AST + TOV + PF + FP, data = FINAL )
+
+summary(modelo1)
+exp(coef(modelo1))
+plot(modelo1)
+################################################################################
+######## SELECCIÓN DE LOS MEJORES PREDICTORES EN EL MODELO ###################
+
+
+step(object = modelo1, direction = "both", trace = 1)
+
+
+#############################################################################
+###### MODELO CON LAS VARIABLES OPTIMAS ###########################
+
+M1 <- lm(Jugador1 ~ MIN + PTS + FGA + FTM + REB, data = FINAL )
+
+summary(M1)
+exp(coef(M1))
+
+plot(M1)
+
+############################################################################
+
+step(object = M1, direction = "both", trace = 1)
+
+
+
+qqnorm(M1$residuals)
+qqline(M1$residuals)
+
+
+###########################################################################
+
+ggplot(data = FINAL, aes(M1$fitted.values, M1$residuals)) +
+  geom_point() +
+  geom_smooth(color = "firebrick", se = FALSE) +
+  geom_hline(yintercept = 0) +
+  theme_bw()
+
+
+
+
+# modelo2 <- lm(Jugador3 ~ MIN + PTS + FGA +FTM + FTA + DREB + REB + AST + TOV + FP, data = FINAL )
+# 
+# summary(modelo2)
+# modelo2
+# step(object = modelo2, direction = "both", trace = 1)
+# 
+# 
+# modelo3 <- lm(Jugador3 ~ MIN + PTS + FGA + FTA + REB + AST + TOV + FP, data = FINAL )
+# 
+# summary(modelo3)
+# modelo3
+
+#install.packages("gridExtra")
+
+library(gridExtra)
+plot1 <- ggplot(data = FINAL, aes(MIN, M1$residuals)) +
+  geom_point() + geom_smooth(color = "firebrick") + geom_hline(yintercept = 0) +
+  theme_bw()
+plot2 <- ggplot(data = FINAL, aes(PTS, M1$residuals)) +
+  geom_point() + geom_smooth(color = "firebrick") + geom_hline(yintercept = 0) +
+  theme_bw()
+plot3 <- ggplot(data = FINAL, aes(FTM, M1$residuals)) +
+  geom_point() + geom_smooth(color = "firebrick") + geom_hline(yintercept = 0) +
+  theme_bw()
+plot4 <- ggplot(data = FINAL, aes(FGA, M1$residuals)) +
+  geom_point() + geom_smooth(color = "firebrick") + geom_hline(yintercept = 0) +
+  theme_bw()
+plot5 <- ggplot(data = FINAL, aes(REB, M1$residuals)) +
+  geom_point() + geom_smooth(color = "firebrick") + geom_hline(yintercept = 0) +
+  theme_bw()
+grid.arrange(plot1, plot2, plot3, plot4, plot5)
+
+##############################################
+######## TEST SHAPIRO WILK ###############
+
+
+shapiro.test(M1$residuals)
+influencePlot(M1)
